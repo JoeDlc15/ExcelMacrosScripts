@@ -1,0 +1,70 @@
+
+function main(workbook: ExcelScript.Workbook) {
+  
+    let hojaDestino = workbook.getWorksheet("Reporte"); // donde se pegara los datos
+    // Desbloquear hoja destino si está protegida (quitar contraseña si no tiene)
+    try {
+        hojaDestino.getProtection().unprotect(); // OPCIONAL: si no tiene contraseña, eliminar este parámetro
+    } catch (error) {
+        console.log("No se pudo desbloquear o la hoja no estaba protegida.");
+    }
+    
+  let selectedSheet = workbook.getActiveWorksheet();
+  let filtrador = workbook.getWorksheet("Filtrador"); 
+	// copiar datos LPN de la columna A de FILTRADOR a reporte columna O
+  selectedSheet.getRange("O:O").copyFrom(filtrador.getRange("A:A"), ExcelScript.RangeCopyType.all, false, false);
+	// Quitando duplicados
+  selectedSheet.getRange("O1:O800").removeDuplicates([0], true);
+	// eliminando espacio vacio q genera la linea anterior
+  selectedSheet.getRange("O4").getExtendedRange(ExcelScript.KeyboardDirection.down).moveTo(selectedSheet.getRange("O3"));
+  
+	selectedSheet.getRange("O:O").getFormat().autofitColumns();
+
+  // Paste to range S1 on selectedSheet from range P1 on selectedSheet
+  selectedSheet.getRange("Q1").copyFrom(selectedSheet.getRange("O1"), ExcelScript.RangeCopyType.all, false, false);
+  // Set range S1:S2 on selectedSheet
+  selectedSheet.getRange("Q1:Q2").setFormulasLocal([["TOTAL LPN"], ["=CONTAR(O:O)"]]);
+
+// GENERANDO BUCLE PARA IMPRIMIR DATOS
+  let totalDatos = selectedSheet.getRange("Q2").getValue(); // Obtener el COUNT desde la celda B1
+
+  //console.log("Dato " + totalDatos);
+	let x = 1;
+  // Bucle basado en el valor obtenido de COUNT
+  for (let i = 1; i <= totalDatos; i++) {
+    x = 1 + i
+    //console.log("Dato " + i + " " + x + " " + selectedSheet.getRange("O" + x).getValue());
+    // Paste to range E2:I2 on selectedSheet from range P2 on selectedSheet
+    selectedSheet.getRange("E2:I2").copyFrom(selectedSheet.getRange("O" + x), ExcelScript.RangeCopyType.all, false, false);
+
+    // IMPRIMIR
+        let hoja = workbook.getActiveWorksheet();
+        let rango = hoja.getRange("C1:K415");
+
+        // Buscar la última fila con datos en la columna A
+        let valores = rango.getValues();
+        let ultimaFila = 0;
+
+        for (let i = valores.length - 1; i >= 0; i--) {
+            if (valores[i].some(valor => valor !== "")) {
+                ultimaFila = i + 1; // Sumamos 3 porque empezamos desde A3
+                break;
+            }
+        }
+
+        if (ultimaFila > 2) {
+            let rangoConDatos = hoja.getRange(`C1:K${ultimaFila}`);
+            rangoConDatos.select(); // Seleccionar el rango con datos (Opcional)
+
+            // Configurar área de impresión (Solo para Excel de escritorio)
+            //hoja.getPageLayout().setPrintArea(rangoConDatos);
+
+            console.log(`Área de impresión establecida en C1:K${ultimaFila}`);
+        } else {
+            console.log("No hay datos para imprimir.");
+        }
+  }//FIN DE BUCLE FOR
+
+  hojaDestino.getProtection().protect();
+    
+}
