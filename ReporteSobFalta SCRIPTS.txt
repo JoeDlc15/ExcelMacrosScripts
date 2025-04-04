@@ -1,0 +1,64 @@
+function main(workbook: ExcelScript.Workbook) {
+	let hojaDatos = workbook.getWorksheet("Datos");
+	// Activar esa hoja
+	hojaDatos.activate();
+
+	let selectedSheet = workbook.getActiveWorksheet();
+	// Duplicate worksheet
+	let datos__2_ = selectedSheet.copy(ExcelScript.WorksheetPositionType.before, selectedSheet);
+	// Unprotect sheet Datos (2)
+	datos__2_.getProtection().unprotect();
+	// Delete range A:C on datos__2_
+	datos__2_.getRange("B:C").delete(ExcelScript.DeleteShiftDirection.left);
+	// Delete range D:D on datos__2_
+	datos__2_.getRange("E:E").delete(ExcelScript.DeleteShiftDirection.left);
+
+	// Auto fit the columns of range D:D on selectedSheet
+	datos__2_.getRange("D:D").getFormat().autofitColumns();
+
+	let hoja = workbook.getActiveWorksheet();
+	let rango = hoja.getRange("B1:B10000");
+
+	// Buscar la última fila con datos en la columna A
+	let valores = rango.getValues();
+	let ultimaFila = 0;
+
+	for (let i = valores.length - 1; i >= 0; i--) {
+		if (valores[i].some(valor => valor !== "")) {
+			ultimaFila = i + 1; // Sumamos 3 porque empezamos desde A3
+			break;
+		}
+	}
+
+	// Set range A2:A3 on selectedSheet
+	datos__2_.getRange("A2:A3").setFormulas([["TIENDA"], ["=VLOOKUP(B3,Staging!$A$1:$P$234,11,FALSE)"]]);
+	// Auto fill range
+	datos__2_.getRange("A3").autoFill(`A3:A${ultimaFila}`, ExcelScript.AutoFillType.fillDefault);
+
+	// Set range F2:G2 on datos__2_
+	datos__2_.getRange("G2:H2").setValues([["status","diferencia"]]);
+	let reporte = workbook.getWorksheet("Reporte");
+	// Unprotect sheet Reporte
+	reporte.getProtection().unprotect();
+
+	//console.log(ultimaFila);	
+	datos__2_.getRange("H3").setFormula("=IF(B3=\"\",\"\",SUMIFS(Filtrador!C:C,Filtrador!K:K,B3,Filtrador!D:D,C3)-F3)");
+	// Auto fill range
+	datos__2_.getRange("H3").autoFill(`H3:H${ultimaFila}`, ExcelScript.AutoFillType.fillDefault);
+	// Set range F3 on datos__2_
+	datos__2_.getRange("G3").setFormula("=IF(B3=\"\",\"\",IF(H3=0,\"CUADRADO\",IF(0>H3,\"FALTANTE\",\"SOBRANTE\")))");
+	// Auto fill range
+	datos__2_.getRange("G3").autoFill(`G3:G${ultimaFila}`, ExcelScript.AutoFillType.fillDefault);
+	
+	// Toggle auto filter on datos__2_
+	datos__2_.getAutoFilter().apply(datos__2_.getRange("F2"));
+	// Apply custom filter on datos__2_
+	datos__2_.getAutoFilter().apply(datos__2_.getAutoFilter().getRange(), 7, { filterOn: ExcelScript.FilterOn.custom, criterion1: "<>0" });
+
+
+	let nombreHoja = datos__2_.getName();
+	let hojaNewReporte = workbook.getWorksheet(nombreHoja);
+	// Activar esa hoja
+	hojaNewReporte.activate();
+	//console.log(nombreHoja)
+}
