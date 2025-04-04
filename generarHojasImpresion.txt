@@ -1,0 +1,50 @@
+function main(workbook: ExcelScript.Workbook) {
+	let selectedSheet = workbook.getActiveWorksheet(); // Hoja base a duplicar
+	let filtrador = workbook.getWorksheet("Filtrador");
+
+	// Obtener el rango usado en la columna O
+	//let usedRange = filtrador.getRange("O:O").getUsedRange();
+	//let rowCount = usedRange.getRowCount(); // Cantidad de filas con datos
+	
+	let rowCount = filtrador.getRange("Q2").getValue();
+
+	for (let i = 1; i <= rowCount; i++) {
+		let newSheet = selectedSheet.copy(ExcelScript.WorksheetPositionType.before, selectedSheet);
+		let sourceRange = filtrador.getRange(`O${i + 1}`);
+		newSheet.getRange("E2:I2").copyFrom(sourceRange, ExcelScript.RangeCopyType.all, false, false);
+		newSheet.getProtection().unprotect();
+		// Set width of column(s) at range C:C on selectedSheet to 48
+		newSheet.getRange("C:C").getFormat().setColumnWidth(48);
+		newSheet.getRange("D:E").getFormat().setColumnWidth(65.25);
+		newSheet.getRange("G:G").getFormat().setColumnWidth(52.5);
+		newSheet.getRange("H:H").getFormat().setColumnWidth(54.75);
+		newSheet.getRange("I:I").getFormat().setColumnWidth(61.5);
+		newSheet.getRange("J:J").getFormat().setColumnWidth(43.75);
+		newSheet.getRange("K:K").getFormat().setColumnWidth(39.75);
+
+		let rango = newSheet.getRange("C1:C450");
+		let valores = rango.getValues();
+
+		let ultimaFila = 0;
+		for (let i = valores.length - 1; i >= 0; i--) {
+			if (valores[i].some(valor => valor !== "")) {
+				ultimaFila = i + 2; // Sumamos 2
+				break;
+			}
+		}
+		console.log(ultimaFila)
+		newSheet.getRange(ultimaFila + ":415").setRowHidden(true);
+	}
+
+	let hojasAocultar = ["Datos", "Scan", "Filtrador","Reporte","Staging"]; // Nombres de hojas a ocultar
+	let hojas = workbook.getWorksheets();
+
+	for (let hoja of hojas) {
+		if (hojasAocultar.includes(hoja.getName())) {
+			hoja.setVisibility(ExcelScript.SheetVisibility.hidden);
+		}
+	}
+	//console.log("Hojas ocultas antes de la impresión.");
+
+	//console.log(`Se crearon ${rowCount} hojas duplicadas.`);
+}

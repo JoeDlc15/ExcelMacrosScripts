@@ -1,0 +1,19 @@
+function main(workbook: ExcelScript.Workbook) {
+    let hojas = workbook.getWorksheets();
+
+    for (let hoja of hojas) {
+        hoja.setVisibility(ExcelScript.SheetVisibility.visible);
+    }
+    console.log("Hojas mostradas después de la impresión.");
+    
+    const hojasProtegidas = ["Datos", "Scan", "Filtrador", "Reporte", "Staging"]; 
+
+    for (let hoja of hojas) {
+        const nombreHoja = hoja.getName();
+        if (!hojasProtegidas.includes(nombreHoja)) {
+            hoja.delete();
+        }
+    }
+
+    workbook.getWorksheet("Reporte").activate
+}
