@@ -1,16 +1,44 @@
 function main(workbook: ExcelScript.Workbook) {
-	let selectedSheet = workbook.getActiveWorksheet(); // Hoja base a duplicar
-	let filtrador = workbook.getWorksheet("Filtrador");
 
-	// Obtener el rango usado en la columna O
-	//let usedRange = filtrador.getRange("O:O").getUsedRange();
-	//let rowCount = usedRange.getRowCount(); // Cantidad de filas con datos
+	let hojaFiltrador = workbook.getWorksheet("Filtrador"); // donde se pegara los datos
+	// Desbloquear hoja destino si está protegida (quitar contraseña si no tiene)
+	try {
+		hojaFiltrador.getProtection().unprotect(); // OPCIONAL: si no tiene contraseña, eliminar este parámetro
+	} catch (error) {
+		console.log("No se pudo desbloquear o la hoja no estaba protegida.");
+	}
+
+	let hojaReporte = workbook.getWorksheet("Reporte"); // donde se pegara los datos
+	// Desbloquear hoja destino si está protegida (quitar contraseña si no tiene)
+	try {
+		hojaReporte.getProtection().unprotect(); // OPCIONAL: si no tiene contraseña, eliminar este parámetro
+	} catch (error) {
+		console.log("No se pudo desbloquear o la hoja no estaba protegida.");
+	}
+
+	hojaFiltrador.activate();
+
+	// Clear ExcelScript.ClearApplyTo.all from range L:R on selectedSheet
+	hojaFiltrador.getRange("L:R").clear(ExcelScript.ClearApplyTo.all);
+
+	// copiar datos LPN de la columna A de FILTRADOR a columna O
+	hojaFiltrador.getRange("O:O").copyFrom(hojaFiltrador.getRange("A:A"), ExcelScript.RangeCopyType.all, false, false);
+	// Quitando duplicados
+	hojaFiltrador.getRange("O1:O1000").removeDuplicates([0], true);
+	// eliminando espacio vacio q genera la linea anterior
+	hojaFiltrador.getRange("O4").getExtendedRange(ExcelScript.KeyboardDirection.down).moveTo(hojaFiltrador.getRange("O3"));
+	hojaFiltrador.getRange("O:O").getFormat().autofitColumns();
+	// Paste to range S1 on selectedSheet from range P1 on selectedSheet
+	hojaFiltrador.getRange("Q1").copyFrom(hojaFiltrador.getRange("O1"), ExcelScript.RangeCopyType.all, false, false);
+	// Set range S1:S2 on selectedSheet
+	hojaFiltrador.getRange("Q1:Q2").setFormulasLocal([["TOTAL LPN"], ["=CONTAR(O:O)"]]);
+//-------------------------------------------------------
 	
-	let rowCount = filtrador.getRange("Q2").getValue();
+	let rowCount = hojaFiltrador.getRange("Q2").getValue();
 
 	for (let i = 1; i <= rowCount; i++) {
-		let newSheet = selectedSheet.copy(ExcelScript.WorksheetPositionType.before, selectedSheet);
-		let sourceRange = filtrador.getRange(`O${i + 1}`);
+		let newSheet = hojaReporte.copy(ExcelScript.WorksheetPositionType.before, hojaReporte);
+		let sourceRange = hojaFiltrador.getRange(`O${i + 1}`);
 		newSheet.getRange("E2:I2").copyFrom(sourceRange, ExcelScript.RangeCopyType.all, false, false);
 		newSheet.getProtection().unprotect();
 		// Set width of column(s) at range C:C on selectedSheet to 48
@@ -44,7 +72,7 @@ function main(workbook: ExcelScript.Workbook) {
 			hoja.setVisibility(ExcelScript.SheetVisibility.hidden);
 		}
 	}
-	//console.log("Hojas ocultas antes de la impresión.");
+	console.log("Hojas ocultas antes de la impresión.");
 
-	//console.log(`Se crearon ${rowCount} hojas duplicadas.`);
+	console.log(`Se crearon ${rowCount} hojas duplicadas.`);
 }
