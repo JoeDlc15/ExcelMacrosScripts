@@ -1,4 +1,13 @@
 function main(workbook: ExcelScript.Workbook) {
+	let hojas = workbook.getWorksheets();
+	const hojasProtegidas = ["Datos", "Scan", "Filtrador", "Reporte", "Staging"];
+	for (let hoja of hojas) {
+		const nombreHoja = hoja.getName();
+		if (!hojasProtegidas.includes(nombreHoja)) {
+			hoja.delete();
+		}
+	}
+
 	let hojaDatos = workbook.getWorksheet("Datos");
 	// Activar esa hoja
 	hojaDatos.activate();
@@ -31,7 +40,7 @@ function main(workbook: ExcelScript.Workbook) {
 	}
 
 	// Set range A2:A3 on selectedSheet
-	datos__2_.getRange("A2:A3").setFormulas([["TIENDA"], ["=VLOOKUP(B3,Staging!$A$1:$P$234,11,FALSE)"]]);
+	datos__2_.getRange("A2:A3").setFormulas([["TIENDA"], ["=VLOOKUP(B3,Staging!$A$1:$P$10000,11,FALSE)"]]);
 	// Auto fill range
 	datos__2_.getRange("A3").autoFill(`A3:A${ultimaFila}`, ExcelScript.AutoFillType.fillDefault);
 
@@ -50,8 +59,15 @@ function main(workbook: ExcelScript.Workbook) {
 	// Auto fill range
 	datos__2_.getRange("G3").autoFill(`G3:G${ultimaFila}`, ExcelScript.AutoFillType.fillDefault);
 	
+	datos__2_.getRange("I2:I3").setFormulasLocal([["LPN filtrados"],["=BUSCARV(B3;'Filtrador'!A:A;1;falso)"]]);
+	// Auto fill range
+	datos__2_.getRange("I3").autoFill(`I3:I${ultimaFila}`, ExcelScript.AutoFillType.fillDefault);
+
+
 	// Toggle auto filter on datos__2_
 	datos__2_.getAutoFilter().apply(datos__2_.getRange("F2"));
+	// Apply custom filter on datos__2_
+	datos__2_.getAutoFilter().apply(datos__2_.getAutoFilter().getRange(), 8, { filterOn: ExcelScript.FilterOn.custom, criterion1: "<>#N/D" });
 	// Apply custom filter on datos__2_
 	datos__2_.getAutoFilter().apply(datos__2_.getAutoFilter().getRange(), 7, { filterOn: ExcelScript.FilterOn.custom, criterion1: "<>0" });
 
@@ -61,4 +77,6 @@ function main(workbook: ExcelScript.Workbook) {
 	// Activar esa hoja
 	hojaNewReporte.activate();
 	//console.log(nombreHoja)
+
+
 }
